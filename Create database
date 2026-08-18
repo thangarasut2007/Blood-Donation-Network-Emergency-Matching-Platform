@@ -1,0 +1,99 @@
+CREATE DATABASE IF NOT EXISTS blood_management;
+USE blood_management;
+
+CREATE TABLE users (
+    user_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    phone VARCHAR(15),
+    password VARCHAR(255) NOT NULL,
+    role ENUM('DONOR','HOSPITAL','ADMIN') NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE donors (
+    donor_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    blood_group VARCHAR(5) NOT NULL,
+    city VARCHAR(100),
+    latitude DECIMAL(10,7),
+    longitude DECIMAL(10,7),
+    last_donation_date DATE,
+    availability BOOLEAN DEFAULT TRUE,
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+CREATE TABLE hospitals (
+    hospital_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    hospital_name VARCHAR(150) NOT NULL,
+    address VARCHAR(255),
+    city VARCHAR(100),
+    latitude DECIMAL(10,7),
+    longitude DECIMAL(10,7),
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+CREATE TABLE blood_requests (
+    request_id INT AUTO_INCREMENT PRIMARY KEY,
+    hospital_id INT NOT NULL,
+    blood_group VARCHAR(5) NOT NULL,
+    units_required INT NOT NULL,
+    priority ENUM('NORMAL','URGENT','EMERGENCY') DEFAULT 'NORMAL',
+    status ENUM('PENDING','MATCHING','MATCHED','FULFILLED','CANCELLED') DEFAULT 'PENDING',
+    requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (hospital_id) REFERENCES hospitals(hospital_id)
+);
+
+CREATE TABLE donor_matches (
+    match_id INT AUTO_INCREMENT PRIMARY KEY,
+    request_id INT NOT NULL,
+    donor_id INT NOT NULL,
+    match_score DECIMAL(5,2),
+    distance_km DECIMAL(8,2),
+    status ENUM('RECOMMENDED','NOTIFIED','ACCEPTED','REJECTED') DEFAULT 'RECOMMENDED',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (request_id) REFERENCES blood_requests(request_id),
+    FOREIGN KEY (donor_id) REFERENCES donors(donor_id)
+);
+
+CREATE TABLE donation_history (
+    donation_id INT AUTO_INCREMENT PRIMARY KEY,
+    donor_id INT NOT NULL,
+    donation_date DATE NOT NULL,
+    blood_group VARCHAR(5) NOT NULL,
+    hospital_id INT,
+    FOREIGN KEY (donor_id) REFERENCES donors(donor_id),
+    FOREIGN KEY (hospital_id) REFERENCES hospitals(hospital_id)
+);
+
+CREATE TABLE notifications (
+    notification_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    message VARCHAR(255) NOT NULL,
+    notification_type VARCHAR(50),
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+CREATE TABLE blood_inventory (
+    inventory_id INT AUTO_INCREMENT PRIMARY KEY,
+    hospital_id INT NOT NULL,
+    blood_group VARCHAR(5) NOT NULL,
+    units_available INT DEFAULT 0,
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (hospital_id) REFERENCES hospitals(hospital_id)
+);
+
+CREATE TABLE ai_predictions (
+    prediction_id INT AUTO_INCREMENT PRIMARY KEY,
+    blood_group VARCHAR(5) NOT NULL,
+    prediction_date DATE NOT NULL,
+    predicted_units INT NOT NULL,
+    confidence_score DECIMAL(5,2),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+SHOW TABLES;
